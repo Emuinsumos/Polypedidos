@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de Pedidos</title>
+<style>
+  :root{
+    --bg: #14181f;
+    --panel: #1c222c;
+    --panel-2: #232a36;
+    --line: #2c3442;
+    --text: #e8ebf0;
+    --muted: #8a93a3;
+    --accent: #e8a33d;
+    --accent-dim: #4a3a1f;
+    --danger: #d9614f;
+    --ok: #4caf7d;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  #login-screen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .login-box{
+    background: var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:32px 28px;
+    width:100%;
+    max-width:340px;
+  }
+  .login-box h1{
+    font-size:20px;
+    margin:0 0 4px;
+    letter-spacing:.2px;
+  }
+  .login-box p{
+    color:var(--muted);
+    font-size:13px;
+    margin:0 0 20px;
+  }
+  input, select, textarea{
+    width:100%;
+    padding:10px 12px;
+    background: var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:6px;
+    color:var(--text);
+    font-size:14px;
+    margin-bottom:12px;
+    font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus{
+    outline:none;
+    border-color: var(--accent);
+  }
+  button{
+    cursor:pointer;
+    border:none;
+    border-radius:6px;
+    font-size:14px;
+    font-weight:600;
+    padding:10px 16px;
+  }
+  .btn-primary{
+    background: var(--accent);
+    color:#1c1404;
+    width:100%;
+  }
+  .btn-secondary{
+    background: var(--panel-2);
+    color: var(--text);
+    border:1px solid var(--line);
+  }
+  .btn-danger{
+    background: transparent;
+    color: var(--danger);
+    border:1px solid var(--danger);
+    padding:6px 10px;
+    font-size:12px;
+  }
+  .btn-small{
+    padding:6px 10px;
+    font-size:12px;
+  }
+  #error-msg{
+    color: var(--danger);
+    font-size:13px;
+    min-height:18px;
+    margin-top:-4px;
+    margin-bottom:8px;
+  }
+
+  #app{ display:none; min-height:100vh; }
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 20px;
+    border-bottom:1px solid var(--line);
+    background: var(--panel);
+  }
+  .topbar h1{ font-size:16px; margin:0; font-weight:600; }
+  .tabs{
+    display:flex;
+    gap:4px;
+    padding:12px 20px 0;
+    border-bottom:1px solid var(--line);
+    background: var(--panel);
+  }
+  .tab{
+    padding:10px 16px;
+    color: var(--muted);
+    border-bottom:2px solid transparent;
+    cursor:pointer;
+    font-size:14px;
+  }
+  .tab.active{
+    color: var(--text);
+    border-bottom-color: var(--accent);
+  }
+  .content{ padding:20px; max-width:900px; margin:0 auto; }
+  .panel{
+    background: var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:20px;
+    margin-bottom:20px;
+  }
+  .panel h2{
+    font-size:15px;
+    margin:0 0 16px;
+    color: var(--muted);
+    font-weight:600;
+  }
+  .row{ display:flex; gap:10px; }
+  .row > *{ flex:1; }
+  .tier-row{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    margin-bottom:8px;
+  }
+  .tier-row input{ margin-bottom:0; }
+  .tier-row span{ color:var(--muted); font-size:13px; }
+  table{ width:100%; border-collapse:collapse; }
+  th{
+    text-align:left;
+    font-size:12px;
+    color:var(--muted);
+    font-weight:600;
+    padding:8px 10px;
+    border-bottom:1px solid var(--line);
+  }
+  td{
+    padding:10px;
+    border-bottom:1px solid var(--line);
+    font-size:14px;
+    vertical-align:top;
+  }
+  .tiers-list{ color:var(--muted); font-size:13px; }
+  .badge{
+    display:inline-block;
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-size:11px;
+    padding:2px 8px;
+    border-radius:20px;
+  }
+  .empty{
+    color:var(--muted);
+    font-size:13px;
+    padding:20px 0;
+    text-align:center;
+  }
+  .add-tier-link{
+    color: var(--accent);
+    font-size:13px;
+    cursor:pointer;
+    display:inline-block;
+    margin-bottom:14px;
+  }
+  .checkbox-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:12px;
+  }
+  .checkbox-row input{ width:auto; margin:0; }
+  .checkbox-row label{ font-size:14px; }
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN ===================== -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>Panel de Pedidos</h1>
+    <p>Ingresá con tu usuario para continuar</p>
+    <input type="text" id="login-email" placeholder="Usuario">
+    <input type="password" id="login-pass" placeholder="Contraseña">
+    <div id="error-msg"></div>
+    <button class="btn-primary" onclick="login()">Ingresar</button>
+  </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="app">
+  <div class="topbar">
+    <h1>Panel de Pedidos</h1>
+    <button class="btn-secondary btn-small" onclick="logout()">Cerrar sesión</button>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" id="tab-productos" onclick="switchTab('productos')">Productos</div>
+    <div class="tab" id="tab-clientes" onclick="switchTab('clientes')">Clientes</div>
+    <div class="tab" id="tab-pedidos" onclick="switchTab('pedidos')">Pedidos</div>
+    <div class="tab" id="tab-rutas" onclick="switchTab('rutas')">Rutas</div>
+    <div class="tab" id="tab-imprimir" onclick="switchTab('imprimir')">Imprimir</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ---------- PRODUCTOS ---------- -->
+    <div id="view-productos">
+      <div class="panel">
+        <h2>Nuevo producto</h2>
+        <input type="text" id="prod-nombre" placeholder="Nombre del producto">
+        <div class="row">
+          <input type="number" id="prod-precio-minorista" placeholder="Precio minorista">
+          <input type="number" id="prod-precio-mayorista" placeholder="Precio mayorista">
+        </div>
+        <input type="number" id="prod-cantidad-mayorista" placeholder="A partir de cuántas unidades aplica el mayorista">
+        <button class="btn-primary" onclick="guardarProducto()">Guardar producto</button>
+      </div>
+
+      <div class="panel">
+        <h2>Productos cargados</h2>
+        <table>
+          <thead><tr><th>Nombre</th><th>Precios</th><th></th></tr></thead>
+          <tbody id="productos-tbody"></tbody>
+        </table>
+        <div class="empty" id="productos-empty" style="display:none;">Todavía no cargaste productos</div>
+      </div>
+    </div>
+
+    <!-- ---------- CLIENTES ---------- -->
+    <div id="view-clientes" style="display:none;">
+      <div class="panel">
+        <h2>Nuevo cliente</h2>
+        <input type="text" id="cli-nombre" placeholder="Nombre">
+        <input type="text" id="cli-telefono" placeholder="Teléfono">
+        <input type="text" id="cli-direccion" placeholder="Dirección">
+        <div class="checkbox-row">
+          <input type="checkbox" id="cli-descuento-check" onchange="toggleDescuento()">
+          <label for="cli-descuento-check">Aplica descuento</label>
+        </div>
+        <input type="number" id="cli-descuento-pct" placeholder="Porcentaje de descuento" style="display:none;">
+        <button class="btn-primary" onclick="guardarCliente()">Guardar cliente</button>
+      </div>
+
+      <div class="panel">
+        <h2>Clientes cargados</h2>
+        <table>
+          <thead><tr><th>Nombre</th><th>Teléfono</th><th>Dirección</th><th>Descuento</th><th></th></tr></thead>
+          <tbody id="clientes-tbody"></tbody>
+        </table>
+        <div class="empty" id="clientes-empty" style="display:none;">Todavía no cargaste clientes</div>
+      </div>
+    </div>
+
+    <!-- ---------- PEDIDOS ---------- -->
+    <div id="view-pedidos" style="display:none;">
+      <div class="panel">
+        <h2>Asistente: pegar pedido de WhatsApp</h2>
+        <textarea id="asistente-texto" rows="4" placeholder="Pegá acá el texto del pedido (o la transcripción del audio)"></textarea>
+        <input type="file" id="asistente-imagen" accept="image/*">
+        <button class="btn-secondary" onclick="analizarPedido()">Analizar y sugerir productos</button>
+        <div id="asistente-resultado" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Nuevo pedido</h2>
+        <select id="pedido-cliente" onchange="recalcularPedido()"></select>
+        <input type="date" id="pedido-fecha-entrega">
+        <div id="pedido-lineas"></div>
+        <div class="add-tier-link" onclick="addLineaPedido()">+ agregar producto</div>
+        <div style="border-top:1px solid var(--line); padding-top:12px; margin-top:4px;">
+          <div class="row" style="margin-bottom:4px;"><span>Subtotal</span><span id="pedido-subtotal" style="text-align:right;">$0</span></div>
+          <div class="row" style="margin-bottom:4px; color:var(--muted); font-size:13px;"><span id="pedido-descuento-label">Descuento</span><span id="pedido-descuento" style="text-align:right;">$0</span></div>
+          <div class="row" style="font-weight:600; font-size:16px;"><span>Total</span><span id="pedido-total" style="text-align:right;">$0</span></div>
+        </div>
+        <button class="btn-primary" style="margin-top:16px;" onclick="guardarPedido()">Guardar pedido y generar factura</button>
+      </div>
+
+      <div class="panel">
+        <h2>Pedidos cargados</h2>
+        <table>
+          <thead><tr><th>Cliente</th><th>Fecha</th><th>Total</th><th></th></tr></thead>
+          <tbody id="pedidos-tbody"></tbody>
+        </table>
+        <div class="empty" id="pedidos-empty" style="display:none;">Todavía no cargaste pedidos</div>
+      </div>
+    </div>
+
+    <!-- ---------- RUTAS ---------- -->
+    <div id="view-rutas" style="display:none;">
+      <div class="panel">
+        <h2>Punto de partida</h2>
+        <input type="text" id="ruta-origen" placeholder="Dirección desde donde salís a repartir">
+        <button class="btn-secondary" onclick="guardarPuntoPartida()">Guardar punto de partida</button>
+      </div>
+
+      <div class="panel">
+        <h2>Armar hoja de ruta</h2>
+        <input type="date" id="ruta-fecha">
+        <div class="row">
+          <button class="btn-primary" onclick="calcularRuta()">Calcular ruta</button>
+          <button class="btn-secondary" onclick="calcularListaCarga()">Lista de carga (PDF)</button>
+        </div>
+        <div id="ruta-resultado" style="margin-top:16px;"></div>
+      </div>
+    </div>
+
+    <!-- ---------- IMPRIMIR ---------- -->
+    <div id="view-imprimir" style="display:none;">
+      <div class="panel">
+        <h2>Boletas pendientes de imprimir</h2>
+        <p style="color:var(--muted); font-size:13px; margin-top:-8px;">Abrí esta pestaña desde la PC conectada a la impresora y tocá el botón.</p>
+        <button class="btn-primary" onclick="imprimirTodasPendientes()">Imprimir todas las pendientes</button>
+        <table style="margin-top:16px;">
+          <thead><tr><th>Cliente</th><th>Fecha</th><th>Total</th><th></th></tr></thead>
+          <tbody id="pendientes-tbody"></tbody>
+        </table>
+        <div class="empty" id="pendientes-empty" style="display:none;">No hay boletas pendientes de imprimir</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Firebase SDKs (compat, sin build) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- PEGÁ TU API KEY DE GOOGLE MAPS donde dice TU_GOOGLE_MAPS_API_KEY -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+<script>
+  /* =======================================================
+     PEGÁ ACÁ LA CONFIGURACIÓN DE TU PROYECTO FIREBASE
+     (Firebase console > Configuración del proyecto > tus apps > SDK setup)
+     ======================================================= */
+  const firebaseConfig = {
+    apiKey: "AIzaSyBpMDFZBS_qNDoWRNe3do-FF6jT8dbXC8w",
+    authDomain: "poly-51d86.firebaseapp.com",
+    projectId: "poly-51d86",
+    storageBucket: "poly-51d86.firebasestorage.app",
+    messagingSenderId: "672151878669",
+    appId: "1:672151878669:web:538bf1a3ca50192b14a944"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // -------- LOGIN --------
+  const USUARIO_VALIDO = 'Poly';
+  const CONTRASENA_VALIDA = 'benja123';
+
+  function login(){
+    const usuario = document.getElementById('login-email').value.trim();
+    const pass = document.getElementById('login-pass').value;
+    const errorEl = document.getElementById('error-msg');
+    errorEl.textContent = '';
+
+    if(usuario === USUARIO_VALIDO && pass === CONTRASENA_VALIDA){
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      cargarProductos();
+      cargarClientes();
+      cargarPedidos();
+      cargarPuntoPartida();
+      cargarPendientesImpresion();
+      if(document.getElementById('pedido-lineas').children.length === 0) addLineaPedido();
+    } else {
+      errorEl.textContent = 'Usuario o contraseña incorrectos';
+    }
+  }
+
+  function logout(){
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-pass').value = '';
+  }
+
+  // -------- TABS --------
+  function switchTab(tab){
+    document.getElementById('tab-productos').classList.toggle('active', tab === 'productos');
+    document.getElementById('tab-clientes').classList.toggle('active', tab === 'clientes');
+    document.getElementById('tab-pedidos').classList.toggle('active', tab === 'pedidos');
+    document.getElementById('tab-rutas').classList.toggle('active', tab === 'rutas');
+    document.getElementById('tab-imprimir').classList.toggle('active', tab === 'imprimir');
+    document.getElementById('view-productos').style.display = tab === 'productos' ? 'block' : 'none';
+    document.getElementById('view-clientes').style.display = tab === 'clientes' ? 'block' : 'none';
+    document.getElementById('view-pedidos').style.display = tab === 'pedidos' ? 'block' : 'none';
+    document.getElementById('view-rutas').style.display = tab === 'rutas' ? 'block' : 'none';
+    document.getElementById('view-imprimir').style.display = tab === 'imprimir' ? 'block' : 'none';
+  }
+
+  // -------- PRODUCTOS --------
+
+  function guardarProducto(){
+    const nombre = document.getElementById('prod-nombre').value.trim();
+    const precioMinorista = parseFloat(document.getElementById('prod-precio-minorista').value);
+    const precioMayorista = parseFloat(document.getElementById('prod-precio-mayorista').value);
+    const cantidadMayorista = parseFloat(document.getElementById('prod-cantidad-mayorista').value);
+
+    if(!nombre){ alert('Poné un nombre de producto'); return; }
+    if(!(precioMinorista > 0) || !(precioMayorista > 0) || !(cantidadMayorista > 0)){
+      alert('Completá precio minorista, precio mayorista y desde cuántas unidades aplica');
+      return;
+    }
+
+    db.collection('productos').add({
+      nombre, precioMinorista, precioMayorista, cantidadMayorista, creado: Date.now()
+    }).then(() => {
+      document.getElementById('prod-nombre').value = '';
+      document.getElementById('prod-precio-minorista').value = '';
+      document.getElementById('prod-precio-mayorista').value = '';
+      document.getElementById('prod-cantidad-mayorista').value = '';
+    });
+  }
+
+  let productosCache = [];
+  let clientesCache = [];
+
+  function cargarProductos(){
+    db.collection('productos').orderBy('nombre').onSnapshot(snap => {
+      const tbody = document.getElementById('productos-tbody');
+      tbody.innerHTML = '';
+      document.getElementById('productos-empty').style.display = snap.empty ? 'block' : 'none';
+      productosCache = [];
+      snap.forEach(doc => {
+        const p = doc.data();
+        productosCache.push({ id: doc.id, ...p });
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${p.nombre}</td>
+          <td class="tiers-list">Minorista: $${p.precioMinorista} &nbsp;•&nbsp; Mayorista: $${p.precioMayorista} (desde ${p.cantidadMayorista} u.)</td>
+          <td><button class="btn-danger" onclick="borrarProducto('${doc.id}')">Borrar</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+      refrescarSelectsProducto();
+    });
+  }
+
+  function refrescarSelectsProducto(){
+    document.querySelectorAll('.linea-producto').forEach(select => {
+      const valorActual = select.value;
+      select.innerHTML = productosCache.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+      if(valorActual) select.value = valorActual;
+    });
+  }
+
+  function borrarProducto(id){
+    if(confirm('¿Borrar este producto?')){
+      db.collection('productos').doc(id).delete();
+    }
+  }
+
+  // -------- CLIENTES --------
+  function toggleDescuento(){
+    const checked = document.getElementById('cli-descuento-check').checked;
+    document.getElementById('cli-descuento-pct').style.display = checked ? 'block' : 'none';
+  }
+
+  function guardarCliente(){
+    const nombre = document.getElementById('cli-nombre').value.trim();
+    const telefono = document.getElementById('cli-telefono').value.trim();
+    const direccion = document.getElementById('cli-direccion').value.trim();
+    const aplicaDescuento = document.getElementById('cli-descuento-check').checked;
+    const descuentoPct = aplicaDescuento ? parseFloat(document.getElementById('cli-descuento-pct').value) || 0 : 0;
+
+    if(!nombre){ alert('Poné un nombre de cliente'); return; }
+
+    db.collection('clientes').add({
+      nombre, telefono, direccion, aplicaDescuento, descuentoPct, creado: Date.now()
+    }).then(() => {
+      document.getElementById('cli-nombre').value = '';
+      document.getElementById('cli-telefono').value = '';
+      document.getElementById('cli-direccion').value = '';
+      document.getElementById('cli-descuento-check').checked = false;
+      document.getElementById('cli-descuento-pct').value = '';
+      document.getElementById('cli-descuento-pct').style.display = 'none';
+    });
+  }
+
+  function cargarClientes(){
+    db.collection('clientes').orderBy('nombre').onSnapshot(snap => {
+      const tbody = document.getElementById('clientes-tbody');
+      tbody.innerHTML = '';
+      document.getElementById('clientes-empty').style.display = snap.empty ? 'block' : 'none';
+      clientesCache = [];
+      snap.forEach(doc => {
+        const c = doc.data();
+        clientesCache.push({ id: doc.id, ...c });
+        const descTxt = c.aplicaDescuento ? `<span class="badge">${c.descuentoPct}%</span>` : '—';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${c.nombre}</td>
+          <td>${c.telefono || '—'}</td>
+          <td>${c.direccion || '—'}</td>
+          <td>${descTxt}</td>
+          <td><button class="btn-danger" onclick="borrarCliente('${doc.id}')">Borrar</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+      const select = document.getElementById('pedido-cliente');
+      const valorActual = select.value;
+      select.innerHTML = clientesCache.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+      if(valorActual) select.value = valorActual;
+      recalcularPedido();
+    });
+  }
+
+  function borrarCliente(id){
+    if(confirm('¿Borrar este cliente?')){
+      db.collection('clientes').doc(id).delete();
+    }
+  }
+
+  // -------- PEDIDOS --------
+  function addLineaPedido(){
+    const container = document.getElementById('pedido-lineas');
+    const row = document.createElement('div');
+    row.className = 'tier-row';
+    const opciones = productosCache.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+    row.innerHTML = `
+      <select class="linea-producto" style="flex:2;" onchange="recalcularPedido()">${opciones}</select>
+      <input type="number" class="linea-cantidad" placeholder="Cantidad" style="max-width:100px;" oninput="recalcularPedido()">
+      <span class="linea-subtotal" style="min-width:80px; text-align:right;">$0</span>
+      <button class="btn-danger" onclick="this.parentElement.remove(); recalcularPedido();">Quitar</button>
+    `;
+    container.appendChild(row);
+  }
+
+  function calcularPrecioUnitario(producto, cantidad){
+    if(!producto) return 0;
+    return cantidad >= producto.cantidadMayorista ? producto.precioMayorista : producto.precioMinorista;
+  }
+
+  function recalcularPedido(){
+    let subtotal = 0;
+    document.querySelectorAll('#pedido-lineas .tier-row').forEach(row => {
+      const productoId = row.querySelector('.linea-producto').value;
+      const cantidad = parseFloat(row.querySelector('.linea-cantidad').value) || 0;
+      const producto = productosCache.find(p => p.id === productoId);
+      const unitario = calcularPrecioUnitario(producto, cantidad);
+      const lineaSubtotal = unitario * cantidad;
+      row.querySelector('.linea-subtotal').textContent = '$' + lineaSubtotal.toFixed(2);
+      subtotal += lineaSubtotal;
+    });
+
+    const clienteId = document.getElementById('pedido-cliente').value;
+    const cliente = clientesCache.find(c => c.id === clienteId);
+    let descuentoPct = 0;
+    let descuentoMonto = 0;
+    if(cliente && cliente.aplicaDescuento){
+      descuentoPct = cliente.descuentoPct || 0;
+      descuentoMonto = subtotal * descuentoPct / 100;
+    }
+    const total = subtotal - descuentoMonto;
+
+    document.getElementById('pedido-subtotal').textContent = '$' + subtotal.toFixed(2);
+    document.getElementById('pedido-descuento-label').textContent = descuentoPct > 0 ? `Descuento (${descuentoPct}%)` : 'Descuento';
+    document.getElementById('pedido-descuento').textContent = '-$' + descuentoMonto.toFixed(2);
+    document.getElementById('pedido-total').textContent = '$' + total.toFixed(2);
+  }
+
+  function guardarPedido(){
+    const clienteId = document.getElementById('pedido-cliente').value;
+    const cliente = clientesCache.find(c => c.id === clienteId);
+    if(!cliente){ alert('Cargá un cliente primero en la pestaña Clientes'); return; }
+
+    const filas = document.querySelectorAll('#pedido-lineas .tier-row');
+    if(filas.length === 0){ alert('Agregá al menos un producto'); return; }
+
+    const items = [];
+    let subtotal = 0;
+    filas.forEach(row => {
+      const productoId = row.querySelector('.linea-producto').value;
+      const cantidad = parseFloat(row.querySelector('.linea-cantidad').value) || 0;
+      const producto = productosCache.find(p => p.id === productoId);
+      if(producto && cantidad > 0){
+        const unitario = calcularPrecioUnitario(producto, cantidad);
+        const lineaSubtotal = unitario * cantidad;
+        items.push({ nombre: producto.nombre, cantidad, precioUnitario: unitario, subtotal: lineaSubtotal });
+        subtotal += lineaSubtotal;
+      }
+    });
+    if(items.length === 0){ alert('Completá cantidades válidas'); return; }
+
+    const descuentoPct = cliente.aplicaDescuento ? (cliente.descuentoPct || 0) : 0;
+    const descuentoMonto = subtotal * descuentoPct / 100;
+    const total = subtotal - descuentoMonto;
+
+    const fechaEntrega = document.getElementById('pedido-fecha-entrega').value;
+    if(!fechaEntrega){ alert('Elegí una fecha de entrega'); return; }
+
+    const pedido = {
+      clienteId: cliente.id,
+      clienteNombre: cliente.nombre,
+      clienteDireccion: cliente.direccion || '',
+      clienteTelefono: cliente.telefono || '',
+      fechaEntrega,
+      items, subtotal, descuentoPct, descuentoMonto, total,
+      estado: 'pendiente',
+      estadoImpresion: 'pendiente',
+      creado: Date.now()
+    };
+
+    db.collection('pedidos').add(pedido).then(() => {
+      generarFacturaPDF(pedido);
+      document.getElementById('pedido-lineas').innerHTML = '';
+      document.getElementById('pedido-fecha-entrega').value = '';
+      recalcularPedido();
+    });
+  }
+
+  function dibujarFactura(doc, pedido){
+    const fecha = new Date(pedido.creado).toLocaleDateString('es-AR');
+
+    doc.setFontSize(16);
+    doc.text('Factura de pedido', 14, 18);
+    doc.setFontSize(11);
+    doc.text(`Fecha: ${fecha}`, 14, 28);
+    doc.text(`Cliente: ${pedido.clienteNombre}`, 14, 35);
+    if(pedido.clienteTelefono) doc.text(`Teléfono: ${pedido.clienteTelefono}`, 14, 41);
+    if(pedido.clienteDireccion) doc.text(`Dirección: ${pedido.clienteDireccion}`, 14, 47);
+
+    let y = 60;
+    doc.setFontSize(10);
+    doc.text('Producto', 14, y);
+    doc.text('Cant.', 110, y);
+    doc.text('P. unit.', 140, y);
+    doc.text('Subtotal', 175, y);
+    y += 4;
+    doc.line(14, y, 196, y);
+    y += 8;
+
+    pedido.items.forEach(item => {
+      doc.text(item.nombre, 14, y);
+      doc.text(String(item.cantidad), 110, y);
+      doc.text('$' + item.precioUnitario.toFixed(2), 140, y);
+      doc.text('$' + item.subtotal.toFixed(2), 175, y);
+      y += 8;
+    });
+
+    y += 4;
+    doc.line(14, y, 196, y);
+    y += 10;
+    doc.text(`Subtotal: $${pedido.subtotal.toFixed(2)}`, 140, y);
+    y += 8;
+    if(pedido.descuentoPct > 0){
+      doc.text(`Descuento (${pedido.descuentoPct}%): -$${pedido.descuentoMonto.toFixed(2)}`, 140, y);
+      y += 8;
+    }
+    doc.setFontSize(13);
+    doc.text(`Total: $${pedido.total.toFixed(2)}`, 140, y);
+    return fecha;
+  }
+
+  function generarFacturaPDF(pedido){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const fecha = dibujarFactura(doc, pedido);
+    doc.save(`factura_${pedido.clienteNombre.replace(/\s+/g,'_')}_${fecha.replace(/\//g,'-')}.pdf`);
+  }
+
+  function cargarPedidos(){
+    db.collection('pedidos').orderBy('creado', 'desc').onSnapshot(snap => {
+      const tbody = document.getElementById('pedidos-tbody');
+      tbody.innerHTML = '';
+      document.getElementById('pedidos-empty').style.display = snap.empty ? 'block' : 'none';
+      snap.forEach(doc => {
+        const p = doc.data();
+        const fecha = new Date(p.creado).toLocaleDateString('es-AR');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${p.clienteNombre}</td>
+          <td>${fecha}${p.fechaEntrega ? ' <span class="tiers-list">(entrega: '+p.fechaEntrega+')</span>' : ''}</td>
+          <td>$${p.total.toFixed(2)}</td>
+          <td><button class="btn-secondary btn-small" onclick='generarFacturaPDF(${JSON.stringify(p)})'>Descargar factura</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    });
+  }
+
+  // -------- RUTAS --------
+  function guardarPuntoPartida(){
+    const origen = document.getElementById('ruta-origen').value.trim();
+    if(!origen){ alert('Ingresá una dirección de partida'); return; }
+    db.collection('config').doc('rutas').set({ origen }).then(() => {
+      alert('Punto de partida guardado');
+    });
+  }
+
+  function cargarPuntoPartida(){
+    db.collection('config').doc('rutas').get().then(doc => {
+      if(doc.exists && doc.data().origen){
+        document.getElementById('ruta-origen').value = doc.data().origen;
+      }
+    });
+  }
+
+  function calcularRuta(){
+    const fecha = document.getElementById('ruta-fecha').value;
+    const origen = document.getElementById('ruta-origen').value.trim();
+    const resultadoDiv = document.getElementById('ruta-resultado');
+
+    if(!fecha){ alert('Elegí una fecha de entrega'); return; }
+    if(!origen){ alert('Guardá primero el punto de partida'); return; }
+
+    db.collection('pedidos').where('fechaEntrega', '==', fecha).get().then(snap => {
+      if(snap.empty){
+        resultadoDiv.innerHTML = '<div class="empty">No hay pedidos con entrega para esa fecha</div>';
+        return;
+      }
+
+      // Un cliente puede tener más de un pedido ese día: los agrupamos
+      const clientesDelDia = {};
+      snap.forEach(doc => {
+        const p = doc.data();
+        if(!clientesDelDia[p.clienteId]){
+          clientesDelDia[p.clienteId] = { nombre: p.clienteNombre, direccion: p.clienteDireccion, telefono: p.clienteTelefono };
+        }
+      });
+      const clientesArr = Object.values(clientesDelDia).filter(c => c.direccion);
+      const sinDireccion = Object.values(clientesDelDia).filter(c => !c.direccion);
+
+      if(clientesArr.length === 0){
+        resultadoDiv.innerHTML = '<div class="empty">Ninguno de los clientes con pedido esa fecha tiene dirección cargada</div>';
+        return;
+      }
+
+      const linkMaps = armarLinkGoogleMaps(origen, clientesArr);
+      renderizarRuta(clientesArr, sinDireccion, fecha, origen, linkMaps);
+    });
+  }
+
+  function armarLinkGoogleMaps(origen, clientes){
+    const destino = clientes[clientes.length - 1].direccion;
+    const paradas = clientes.slice(0, -1).map(c => encodeURIComponent(c.direccion)).join('|');
+    let url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origen)}&destination=${encodeURIComponent(destino)}&travelmode=driving`;
+    if(paradas) url += `&waypoints=${paradas}`;
+    return url;
+  }
+
+  let ultimaRutaCalculada = null;
+
+  function renderizarRuta(clientes, sinDireccion, fecha, origen, linkMaps){
+    ultimaRutaCalculada = { clientes, fecha, origen, linkMaps };
+    let html = '<table><thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Teléfono</th></tr></thead><tbody>';
+    clientes.forEach((c, i) => {
+      html += `<tr><td>${i+1}</td><td>${c.nombre}</td><td>${c.direccion}</td><td>${c.telefono || '—'}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    if(sinDireccion.length > 0){
+      html += `<div class="empty">Sin dirección cargada (no se incluyen en la ruta): ${sinDireccion.map(c=>c.nombre).join(', ')}</div>`;
+    }
+    html += `<a href="${linkMaps}" target="_blank" style="display:block; margin-top:16px;"><button class="btn-secondary" style="width:100%;">Abrir ruta en Google Maps</button></a>`;
+    html += '<div class="empty" style="text-align:left;">Dentro de la app de Maps podés arrastrar las paradas para reordenarlas o usar "Optimizar orden de la ruta" (gratis, sin API).</div>';
+    html += '<button class="btn-primary" style="margin-top:12px;" onclick="generarHojaRutaPDF()">Descargar hoja de ruta (PDF)</button>';
+    document.getElementById('ruta-resultado').innerHTML = html;
+  }
+
+  function generarHojaRutaPDF(){
+    if(!ultimaRutaCalculada) return;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const { clientes, fecha, origen, linkMaps } = ultimaRutaCalculada;
+
+    doc.setFontSize(16);
+    doc.text('Hoja de ruta', 14, 18);
+    doc.setFontSize(11);
+    doc.text(`Fecha de entrega: ${fecha}`, 14, 28);
+    doc.text(`Punto de partida: ${origen}`, 14, 35);
+
+    let y = 50;
+    doc.setFontSize(10);
+    doc.text('#', 14, y);
+    doc.text('Cliente', 24, y);
+    doc.text('Dirección', 90, y);
+    doc.text('Teléfono', 165, y);
+    y += 4;
+    doc.line(14, y, 196, y);
+    y += 8;
+
+    clientes.forEach((c, i) => {
+      doc.text(String(i+1), 14, y);
+      doc.text(c.nombre, 24, y);
+      doc.text(c.direccion, 90, y);
+      doc.text(c.telefono || '—', 165, y);
+      y += 10;
+    });
+
+    y += 6;
+    doc.setTextColor(40, 100, 200);
+    doc.textWithLink('Abrir ruta completa en Google Maps', 14, y, { url: linkMaps });
+    doc.setTextColor(0, 0, 0);
+
+    doc.save(`hoja_de_ruta_${fecha}.pdf`);
+  }
+
+  function calcularListaCarga(){
+    const fecha = document.getElementById('ruta-fecha').value;
+    if(!fecha){ alert('Elegí una fecha de entrega'); return; }
+
+    db.collection('pedidos').where('fechaEntrega', '==', fecha).get().then(snap => {
+      if(snap.empty){
+        alert('No hay pedidos con entrega para esa fecha');
+        return;
+      }
+
+      const totales = {};
+      snap.forEach(doc => {
+        const p = doc.data();
+        p.items.forEach(item => {
+          totales[item.nombre] = (totales[item.nombre] || 0) + item.cantidad;
+        });
+      });
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF();
+      pdf.setFontSize(16);
+      pdf.text('Mercadería a cargar', 14, 18);
+      pdf.setFontSize(11);
+      pdf.text(`Fecha de entrega: ${fecha}`, 14, 28);
+
+      let y = 45;
+      pdf.setFontSize(10);
+      pdf.text('Producto', 14, y);
+      pdf.text('Cantidad total', 140, y);
+      y += 4;
+      pdf.line(14, y, 196, y);
+      y += 8;
+
+      Object.keys(totales).sort().forEach(nombre => {
+        pdf.text(nombre, 14, y);
+        pdf.text(String(totales[nombre]), 140, y);
+        y += 10;
+      });
+
+      pdf.save(`carga_camion_${fecha}.pdf`);
+    });
+  }
+
+  // -------- IMPRIMIR --------
+  let pendientesCache = [];
+
+  function cargarPendientesImpresion(){
+    db.collection('pedidos').where('estadoImpresion', '==', 'pendiente').onSnapshot(snap => {
+      const tbody = document.getElementById('pendientes-tbody');
+      tbody.innerHTML = '';
+      document.getElementById('pendientes-empty').style.display = snap.empty ? 'block' : 'none';
+      pendientesCache = [];
+      snap.forEach(doc => {
+        const p = doc.data();
+        pendientesCache.push({ id: doc.id, ...p });
+        const fecha = new Date(p.creado).toLocaleDateString('es-AR');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${p.clienteNombre}</td>
+          <td>${fecha}</td>
+          <td>$${p.total.toFixed(2)}</td>
+          <td><button class="btn-secondary btn-small" onclick="imprimirUnaFactura('${doc.id}')">Imprimir</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    });
+  }
+
+  function marcarComoImpreso(id){
+    return db.collection('pedidos').doc(id).update({ estadoImpresion: 'impreso' });
+  }
+
+  function imprimirUnaFactura(id){
+    const pedido = pendientesCache.find(p => p.id === id);
+    if(!pedido) return;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    dibujarFactura(doc, pedido);
+    doc.autoPrint();
+    window.open(doc.output('bloburl'), '_blank');
+    marcarComoImpreso(id);
+  }
+
+  function imprimirTodasPendientes(){
+    if(pendientesCache.length === 0){ alert('No hay boletas pendientes'); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    pendientesCache.forEach((pedido, i) => {
+      if(i > 0) doc.addPage();
+      dibujarFactura(doc, pedido);
+    });
+    doc.autoPrint();
+    window.open(doc.output('bloburl'), '_blank');
+    const ids = pendientesCache.map(p => p.id);
+    ids.forEach(id => marcarComoImpreso(id));
+  }
+
+  // -------- ASISTENTE WHATSAPP --------
+  let ultimasSugerencias = [];
+
+  function analizarPedido(){
+    const archivo = document.getElementById('asistente-imagen').files[0];
+    const resultadoDiv = document.getElementById('asistente-resultado');
+
+    if(archivo){
+      resultadoDiv.innerHTML = '<div class="empty">Leyendo la imagen…</div>';
+      Tesseract.recognize(archivo, 'spa')
+        .then(({ data }) => procesarTextoPedido(data.text))
+        .catch(() => {
+          resultadoDiv.innerHTML = '<div class="empty">No se pudo leer la imagen, probá pegando el texto</div>';
+        });
+    } else {
+      const texto = document.getElementById('asistente-texto').value;
+      if(!texto.trim()){ alert('Pegá un texto o subí una captura'); return; }
+      procesarTextoPedido(texto);
+    }
+  }
+
+  function normalizarTexto(txt){
+    return txt.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  const PALABRAS_VACIAS = ['de','la','el','los','las','con','sin','y','del','al','un','una'];
+
+  const NUMEROS_EN_TEXTO = {
+    'un':1, 'uno':1, 'una':1, 'dos':2, 'tres':3, 'cuatro':4, 'cinco':5,
+    'seis':6, 'siete':7, 'ocho':8, 'nueve':9, 'diez':10, 'once':11,
+    'doce':12, 'docena':12, 'media':0.5
+  };
+
+  function extraerCantidadCerca(texto, inicio, fin){
+    const alrededor = texto.substring(Math.max(0, inicio - 20), fin + 20);
+    const matchNum = alrededor.match(/\d+([.,]\d+)?/);
+    if(matchNum) return parseFloat(matchNum[0].replace(',', '.'));
+    const palabras = normalizarTexto(alrededor).split(' ');
+    for(const palabra of palabras){
+      if(NUMEROS_EN_TEXTO[palabra] !== undefined) return NUMEROS_EN_TEXTO[palabra];
+    }
+    return 1;
+  }
+
+  function procesarTextoPedido(texto){
+    const textoNorm = normalizarTexto(texto);
+    const resultadoDiv = document.getElementById('asistente-resultado');
+    const sugerencias = [];
+
+    productosCache.forEach(p => {
+      const nombreNorm = normalizarTexto(p.nombre);
+      let posInicio = -1, posFin = -1;
+
+      const idxExacto = textoNorm.indexOf(nombreNorm);
+      if(idxExacto !== -1){
+        posInicio = idxExacto;
+        posFin = idxExacto + nombreNorm.length;
+      } else {
+        // no está el nombre completo: probamos si están todas sus palabras clave sueltas en el texto
+        const palabrasProducto = nombreNorm.split(' ').filter(w => w.length > 2 && !PALABRAS_VACIAS.includes(w));
+        if(palabrasProducto.length > 0 && palabrasProducto.every(w => textoNorm.includes(w))){
+          posInicio = textoNorm.indexOf(palabrasProducto[0]);
+          posFin = posInicio + palabrasProducto[0].length;
+        }
+      }
+
+      if(posInicio !== -1){
+        const cantidad = extraerCantidadCerca(texto, posInicio, posFin);
+        sugerencias.push({ productoId: p.id, nombre: p.nombre, cantidad });
+      }
+    });
+
+    ultimasSugerencias = sugerencias;
+
+    if(sugerencias.length === 0){
+      resultadoDiv.innerHTML = '<div class="empty">No se reconoció ningún producto cargado en el texto</div>';
+      return;
+    }
+
+    let html = '<table><thead><tr><th>Producto detectado</th><th>Cantidad</th></tr></thead><tbody>';
+    sugerencias.forEach(s => {
+      html += `<tr><td>${s.nombre}</td><td>${s.cantidad}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    html += '<button class="btn-primary" style="margin-top:12px;" onclick="usarSugerencias()">Usar este pedido</button>';
+    resultadoDiv.innerHTML = html;
+  }
+
+  function usarSugerencias(){
+    document.getElementById('pedido-lineas').innerHTML = '';
+    ultimasSugerencias.forEach(s => {
+      addLineaPedido();
+      const filas = document.querySelectorAll('#pedido-lineas .tier-row');
+      const fila = filas[filas.length - 1];
+      fila.querySelector('.linea-producto').value = s.productoId;
+      fila.querySelector('.linea-cantidad').value = s.cantidad;
+    });
+    recalcularPedido();
+    document.getElementById('asistente-resultado').innerHTML = '<div class="empty">Pedido cargado abajo — revisá cliente, cantidades y fecha antes de guardar</div>';
+    document.getElementById('asistente-texto').value = '';
+    document.getElementById('asistente-imagen').value = '';
+  }
+</script>
+
+</body>
+</html>
